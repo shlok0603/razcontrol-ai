@@ -1,0 +1,11 @@
+ALTER TABLE anomalies ADD COLUMN IF NOT EXISTS anomaly_id VARCHAR(100);
+ALTER TABLE anomalies ADD COLUMN IF NOT EXISTS fingerprint VARCHAR(64);
+ALTER TABLE anomalies ADD COLUMN IF NOT EXISTS detection_method VARCHAR(100) NOT NULL DEFAULT 'LEGACY';
+ALTER TABLE anomalies ADD COLUMN IF NOT EXISTS evidence JSON NOT NULL DEFAULT '{}'::json;
+ALTER TABLE anomalies ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+UPDATE anomalies SET anomaly_id = 'ANOM-LEGACY-' || id::text WHERE anomaly_id IS NULL;
+UPDATE anomalies SET fingerprint = 'legacy-' || id::text WHERE fingerprint IS NULL;
+ALTER TABLE anomalies ALTER COLUMN anomaly_id SET NOT NULL;
+ALTER TABLE anomalies ALTER COLUMN fingerprint SET NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_anomalies_anomaly_id ON anomalies (anomaly_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_anomalies_fingerprint ON anomalies (fingerprint);

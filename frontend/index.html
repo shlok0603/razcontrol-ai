@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RazControl AI</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <a class="brand" href="#overview"><span>R</span> RazControl</a>
+        <p class="eyebrow">FINANCIAL CONTROL</p>
+        <nav id="navigation" aria-label="Main navigation">
+          <a href="#overview">Overview</a><a href="#reconciliation">Reconciliation</a>
+          <a href="#controls">Controls</a><a href="#anomalies">Anomalies</a>
+          <a href="#investigations">Investigations</a><a href="#reports">Reports</a>
+        </nav>
+        <div class="api-config"><label for="api-url">Backend URL</label><input id="api-url" value="http://localhost:8000" /><button id="save-api" class="quiet">Save endpoint</button></div>
+      </aside>
+      <main>
+        <header><div><p class="eyebrow" id="page-label">RISK OPERATIONS</p><h1 id="page-title">Financial Control Overview</h1></div><button id="pipeline-run" class="primary">Run control pipeline</button></header>
+        <div id="notice" role="status"></div>
+        <section id="app" aria-live="polite"></section>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
