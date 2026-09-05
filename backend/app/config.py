@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     APP_NAME: str = "RazControl AI"
     APP_VERSION: str = "0.1.0"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     DATABASE_URL: str = (
         "postgresql://razcontrol:razcontrol@localhost:5432/razcontrol"

@@ -150,8 +150,9 @@ def get_findings(db: Session, control_id: str | None = None, transaction_id: str
     query = db.query(ControlFinding)
     if control_id is not None: query = query.filter(ControlFinding.control_id == control_id)
     if transaction_id is not None: query = query.filter(ControlFinding.record_id == transaction_id)
+    query = query.order_by(ControlFinding.detected_at.desc())
     if limit is not None: query = query.limit(limit)
-    return [serialize_finding(item) for item in query.order_by(ControlFinding.detected_at.desc()).all()]
+    return [serialize_finding(item) for item in query.all()]
 
 
 def findings_summary(db: Session) -> dict[str, Any]:

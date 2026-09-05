@@ -90,6 +90,16 @@ class RazDetectTests(unittest.TestCase):
         self.assertEqual(by_transaction["anomalies"][0]["transaction_id"], outlier.transaction_id)
         self.assertEqual(summary["total_anomalies"], 1)
 
+    def test_api_handler_limits_anomaly_results(self):
+        first = self.historical_series()
+        self.transaction(20000, date(2026, 2, 1), account="Other")
+        detect_anomalies(self.db)
+
+        listed = list_anomalies(limit=1, db=self.db)
+
+        self.assertEqual(len(listed["anomalies"]), 1)
+        self.assertEqual(listed["anomalies"][0]["transaction_id"], first.transaction_id)
+
 
 if __name__ == "__main__":
     unittest.main()

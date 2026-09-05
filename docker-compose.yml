@@ -1,14 +1,13 @@
 services:
-
   postgres:
     image: pgvector/pgvector:pg16
     container_name: razcontrol-postgres
     restart: unless-stopped
 
     environment:
-      POSTGRES_DB: razcontrol
-      POSTGRES_USER: razcontrol
-      POSTGRES_PASSWORD: razcontrol
+      POSTGRES_DB: ${POSTGRES_DB:-razcontrol}
+      POSTGRES_USER: ${POSTGRES_USER:-razcontrol}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting Docker Compose}
 
     ports:
       - "5432:5432"
@@ -21,6 +20,40 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: razcontrol-backend
+    restart: unless-stopped
+    environment:
+      APP_NAME: ${APP_NAME:-RazControl AI}
+      APP_VERSION: ${APP_VERSION:-0.1.0}
+      DEBUG: ${DEBUG:-false}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-razcontrol}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting Docker Compose}@postgres:5432/${POSTGRES_DB:-razcontrol}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    image: nginx:1.27-alpine
+    container_name: razcontrol-frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "5173:80"
 
   redis:
     image: redis:7-alpine

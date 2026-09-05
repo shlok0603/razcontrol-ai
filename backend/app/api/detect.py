@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.agents.detect import RazDetectAgent
@@ -15,8 +17,15 @@ def run_detection(db: Session = Depends(get_db)):
 
 
 @router.get("/anomalies")
-def list_anomalies(severity: str | None = None, status: str | None = None, db: Session = Depends(get_db)):
-    return {"anomalies": get_anomalies(db, severity=severity, status=status)}
+def list_anomalies(
+    severity: Literal["HIGH", "MEDIUM", "LOW"] | None = None,
+    status: Literal["OPEN", "IN_REVIEW", "RESOLVED", "DISMISSED"] | None = None,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
+    if not 1 <= limit <= 500:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 500")
+    return {"anomalies": get_anomalies(db, severity=severity, status=status, limit=limit)}
 
 
 @router.get("/anomalies/summary")

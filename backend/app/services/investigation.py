@@ -107,6 +107,20 @@ def validate_evidence(evidence: list[EvidenceItem]) -> None:
             raise ValueError("Evidence must have a source type, source ID, and object payload")
 
 
+def validate_result(result: InvestigationResult) -> None:
+    """Reject malformed provider output before it can be persisted or reported."""
+    if not isinstance(result, InvestigationResult):
+        raise ValueError("Investigation provider returned an invalid result")
+    if not 0 <= result.confidence <= 1:
+        raise ValueError("Investigation confidence must be between 0 and 1")
+    if not all(isinstance(value, str) and value.strip() for value in (result.summary, result.risk_assessment, result.likely_cause, result.recommended_next_action)):
+        raise ValueError("Investigation narrative fields must be non-empty strings")
+    if not isinstance(result.supporting_evidence, list) or not all(isinstance(item, str) for item in result.supporting_evidence):
+        raise ValueError("Investigation supporting evidence must be a list of strings")
+    if not isinstance(result.conflicting_evidence, list) or not all(isinstance(item, dict) for item in result.conflicting_evidence):
+        raise ValueError("Investigation conflicting evidence must be a list of objects")
+
+
 def _persist(db: Session, target_type: str, target_id: str, provider: InvestigationProvider, result: InvestigationResult, evidence: list[EvidenceItem]) -> Investigation:
     fingerprint = sha256(f"{target_type}|{target_id}".encode()).hexdigest()
     investigation = db.query(Investigation).filter_by(fingerprint=fingerprint).one_or_none()
@@ -136,6 +150,7 @@ def investigate(db: Session, target_type: str, target_id: str, provider: Investi
         validate_evidence(evidence)
         selected = provider or get_provider()
         result = selected.investigate(target_type, target_id, evidence, ANTI_HALLUCINATION_INSTRUCTIONS)
+        validate_result(result)
         item = _persist(db, target_type, target_id, selected, result, evidence)
         db.commit()
         stored = db.query(InvestigationEvidence).filter_by(investigation_id=item.investigation_id).all()
@@ -144,8 +159,11 @@ def investigate(db: Session, target_type: str, target_id: str, provider: Investi
         db.rollback(); logger.exception("RazInvestigate failed for %s:%s", target_type, target_id); raise
 
 
-def get_investigations(db: Session) -> list[dict[str, Any]]:
-    return [serialize_investigation(item) for item in db.query(Investigation).order_by(Investigation.updated_at.desc()).all()]
+def get_investigations(db: Session, limit: int | None = None) -> list[dict[str, Any]]:
+    query = db.query(Investigation).order_by(Investigation.updated_at.desc())
+    if limit is not None:
+        query = query.limit(limit)
+    return [serialize_investigation(item) for item in query.all()]
 
 
 def get_investigation(db: Session, investigation_id: str) -> dict[str, Any] | None:

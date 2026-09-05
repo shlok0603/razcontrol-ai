@@ -59,6 +59,15 @@ class RazReportTests(unittest.TestCase):
         self.assertIn("ANOM-1", csv_text)
         self.assertIn("CF-1", csv_text)
 
+    def test_csv_export_neutralizes_formula_cells(self):
+        self.add_populated_records()
+        self.db.query(ControlFinding).one().explanation = "=HYPERLINK(\"https://example.invalid\")"
+        self.db.commit()
+
+        csv_text = report_csv(self.db)
+
+        self.assertIn("'=HYPERLINK", csv_text)
+
     def test_large_dataset_counts_without_invented_findings(self):
         self.db.add_all([Transaction(transaction_id=f"TX-{index}", transaction_date=date(2026, 1, 1), description="normal", vendor="Vendor", account="Expense", amount=Decimal("10"), currency="INR", transaction_type="DEBIT", source="ERP") for index in range(500)])
         self.db.commit()

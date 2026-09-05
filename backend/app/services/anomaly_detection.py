@@ -143,12 +143,15 @@ def serialize_anomaly(item: Anomaly) -> dict[str, Any]:
     return {"anomaly_id": item.anomaly_id, "transaction_id": item.transaction_id, "anomaly_type": item.anomaly_type, "risk_score": float(item.risk_score), "severity": item.severity, "detection_method": item.detection_method, "explanation": item.explanation, "evidence": item.evidence, "status": item.status, "detected_at": item.created_at.isoformat(), "last_seen_at": item.last_seen_at.isoformat()}
 
 
-def get_anomalies(db: Session, severity: str | None = None, status: str | None = None, transaction_id: str | None = None) -> list[dict[str, Any]]:
+def get_anomalies(db: Session, severity: str | None = None, status: str | None = None, transaction_id: str | None = None, limit: int | None = None) -> list[dict[str, Any]]:
     query = db.query(Anomaly)
     if severity: query = query.filter(Anomaly.severity == severity)
     if status: query = query.filter(Anomaly.status == status)
     if transaction_id: query = query.filter(Anomaly.transaction_id == transaction_id)
-    return [serialize_anomaly(item) for item in query.order_by(Anomaly.risk_score.desc(), Anomaly.created_at.desc()).all()]
+    query = query.order_by(Anomaly.risk_score.desc(), Anomaly.created_at.desc())
+    if limit is not None:
+        query = query.limit(limit)
+    return [serialize_anomaly(item) for item in query.all()]
 
 
 def anomaly_summary(db: Session) -> dict[str, Any]:

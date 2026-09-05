@@ -27,7 +27,8 @@ def scan_financial_controls(
 
 @router.get("/findings")
 def list_findings(limit: int = 100, db: Session = Depends(get_db)):
-    limit = min(max(limit, 1), 500)
+    if not 1 <= limit <= 500:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 500")
     return {"total": db.query(ControlFinding).count(), "findings": get_findings(db, limit=limit)}
 
 
@@ -37,13 +38,17 @@ def get_findings_summary(db: Session = Depends(get_db)):
 
 
 @router.get("/findings/control/{control_id}")
-def list_control_findings(control_id: str, db: Session = Depends(get_db)):
-    return {"control_id": control_id, "findings": get_findings(db, control_id=control_id)}
+def list_control_findings(control_id: str, limit: int = 100, db: Session = Depends(get_db)):
+    if not 1 <= limit <= 500:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 500")
+    return {"control_id": control_id, "findings": get_findings(db, control_id=control_id, limit=limit)}
 
 
 @router.get("/findings/transaction/{transaction_id}")
-def list_transaction_findings(transaction_id: str, db: Session = Depends(get_db)):
-    return {"transaction_id": transaction_id, "findings": get_findings(db, transaction_id=transaction_id)}
+def list_transaction_findings(transaction_id: str, limit: int = 100, db: Session = Depends(get_db)):
+    if not 1 <= limit <= 500:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 500")
+    return {"transaction_id": transaction_id, "findings": get_findings(db, transaction_id=transaction_id, limit=limit)}
 
 
 @router.patch("/findings/{finding_id}/status")

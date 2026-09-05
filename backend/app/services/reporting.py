@@ -12,6 +12,12 @@ from sqlalchemy.orm import Session
 from app.models import Anomaly, BankTransaction, ControlFinding, Investigation, ReconciliationMatch, Transaction
 
 
+def _csv_safe(value: Any) -> Any:
+    if isinstance(value, str) and value[:1] in {"=", "+", "-", "@"}:
+        return "'" + value
+    return value
+
+
 def _severity_counts(records: list[Any]) -> dict[str, int]:
     counts = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
     for record in records: counts[record.severity] = counts.get(record.severity, 0) + 1
@@ -77,5 +83,5 @@ def report_csv(db: Session) -> str:
     writer = csv.DictWriter(output, fieldnames=["finding_id", "source", "transaction_id", "record_id", "type", "severity", "status", "investigation_status", "recommended_action", "explanation", "evidence"])
     writer.writeheader()
     for item in finding_details(db):
-        writer.writerow({**item, "evidence": json.dumps(item["evidence"], sort_keys=True)})
+        writer.writerow({key: _csv_safe(value) for key, value in {**item, "evidence": json.dumps(item["evidence"], sort_keys=True)}.items()})
     return output.getvalue()

@@ -9,7 +9,9 @@ router = APIRouter(prefix="/reports", tags=["RazReport"])
 
 @router.get("/overall")
 def get_overall_report(limit: int = 100, db: Session = Depends(get_db)):
-    return RazReportAgent().run(db, findings_limit=min(max(limit, 1), 500))
+    if not 1 <= limit <= 500:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 500")
+    return RazReportAgent().run(db, findings_limit=limit)
 
 @router.get("/summary")
 def get_report_summary(db: Session = Depends(get_db)): return report_summary(db)

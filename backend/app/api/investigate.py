@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -8,7 +10,7 @@ from app.services.investigation import get_investigation, get_investigations, up
 router = APIRouter(prefix="/investigations", tags=["RazInvestigate"])
 
 @router.post("/run")
-def run_investigation(target_type: str, target_id: str, db: Session = Depends(get_db)):
+def run_investigation(target_type: Literal["ANOMALY", "CONTROL_FINDING", "RECONCILIATION"], target_id: str, db: Session = Depends(get_db)):
     try:
         result = RazInvestigateAgent().run(db, target_type, target_id)
     except ValueError as error:
@@ -17,8 +19,10 @@ def run_investigation(target_type: str, target_id: str, db: Session = Depends(ge
     return result
 
 @router.get("")
-def list_investigations(db: Session = Depends(get_db)):
-    return {"investigations": get_investigations(db)}
+def list_investigations(limit: int = 100, db: Session = Depends(get_db)):
+    if not 1 <= limit <= 500:
+        raise HTTPException(status_code=422, detail="limit must be between 1 and 500")
+    return {"investigations": get_investigations(db, limit=limit)}
 
 @router.get("/{investigation_id}")
 def retrieve_investigation(investigation_id: str, db: Session = Depends(get_db)):
@@ -33,7 +37,7 @@ def retrieve_evidence(investigation_id: str, db: Session = Depends(get_db)):
     return {"investigation_id": investigation_id, "evidence": result["evidence"]}
 
 @router.patch("/{investigation_id}/status")
-def set_investigation_status(investigation_id: str, status: str, db: Session = Depends(get_db)):
+def set_investigation_status(investigation_id: str, status: Literal["OPEN", "INVESTIGATING", "REVIEW_REQUIRED", "RESOLVED"], db: Session = Depends(get_db)):
     try: result = update_investigation_status(db, investigation_id, status)
     except ValueError as error: raise HTTPException(status_code=422, detail=str(error)) from error
     if result is None: raise HTTPException(status_code=404, detail="Investigation not found")

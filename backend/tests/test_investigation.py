@@ -19,6 +19,13 @@ class MockProvider:
         return InvestigationResult("Reviewed sourced evidence.", "HIGH based on supplied anomaly.", "Hypothesis: unusual amount requires validation.", [f"{item.source_type}:{item.source_id}" for item in evidence], [], .75, "Request supporting documentation.")
 
 
+class InvalidProvider:
+    name = "invalid"
+
+    def investigate(self, target_type, target_id, evidence, instructions):
+        return InvestigationResult("", "", "", [], [], 2.0, "")
+
+
 class RazInvestigateTests(unittest.TestCase):
     def setUp(self):
         engine = create_engine("sqlite:///:memory:")
@@ -61,6 +68,10 @@ class RazInvestigateTests(unittest.TestCase):
         self.assertEqual(first["investigation_id"], second["investigation_id"])
         self.assertEqual(self.db.query(Investigation).count(), 1)
         self.assertEqual(self.db.query(InvestigationEvidence).filter_by(investigation_id=first["investigation_id"]).count(), len(second["evidence"]))
+
+    def test_invalid_provider_output_is_rejected_without_persistence(self):
+        with self.assertRaises(ValueError): investigate(self.db, "ANOMALY", "ANOM-1", InvalidProvider())
+        self.assertEqual(self.db.query(Investigation).count(), 0)
 
     def test_api_handlers_retrieve_evidence_and_update_status(self):
         result = run_investigation("ANOMALY", "ANOM-1", db=self.db)
